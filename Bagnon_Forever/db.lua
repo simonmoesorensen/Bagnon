@@ -13,16 +13,10 @@ BagnonDB:SetScript('OnEvent', function(self, event, arg1)
 end)
 BagnonDB:RegisterEvent('ADDON_LOADED')
 
+
 ASC_PERSONAL_BANK_OFFSET = 1000;
 ASC_REALM_BANK_OFFSET = 2000;
 
-local function IsPersonalBank()
-	return GuildBankFrame and GuildBankFrame.IsPersonalBank
-end
-
-local function IsRealmBank()
-	return GuildBankFrame and GuildBankFrame.IsRealmBank
-end
 
 --constants
 local L = BAGNON_FOREVER_LOCALS
@@ -36,6 +30,13 @@ local playerList --a sorted list of players
 
 
 --[[ Local Functions ]]--
+local function IsPersonalBank()
+	return GuildBankFrame and GuildBankFrame.IsPersonalBank
+end
+
+local function IsRealmBank()
+	return GuildBankFrame and GuildBankFrame.IsRealmBank
+end
 
 local function ToIndex(bag, slot)
 	if tonumber(bag) then
@@ -48,14 +49,25 @@ local function ToBagIndex(bag)
 	return (tonumber(bag) and bag*100) or bag
 end
 
+local function HideBlizzardGuildBankFrame()
+	-- Move frame off-screen
+	-- Reasoning: If we call :Hide() the Bagnon UI also hides
+	-- TODO: We have to find a cleaner way to hide the Blizzard guild bank UI
+
+	if GuildBankFrame then
+		GuildBankFrame:SetClampedToScreen(false)
+		GuildBankFrame:SetPoint("TOPLEFT", UIParent, "TOPLEFT", -1e5, 1e5)
+	end
+end
+
 --returns the full item link only for items that have enchants/suffixes, otherwise returns the item's ID
 local function ToShortLink(link)
 	if link then
 		local a,b,c,d,e,f,g,h = link:match('(%-?%d+):(%-?%d+):(%-?%d+):(%-?%d+):(%-?%d+):(%-?%d+):(%-?%d+):(%-?%d+)')
-		
+
 		--ASC sets this to unique id in the personal bank, clear it
 		c = 0;
-		
+
 		if(b == '0' and b == c and c == d and d == e and e == f and f == g) then
 			return a
 		end
@@ -67,11 +79,11 @@ local function GetBagSize(bag)
 	if bag == KEYRING_CONTAINER then
 		return GetKeyRingSize()
 	end
-	
+
 	if (bag >= ASC_PERSONAL_BANK_OFFSET) then
 		return 98
 	end
-		
+
 	if bag == 'e' then
 		return NUM_EQUIPMENT_SLOTS
 	end
@@ -83,6 +95,8 @@ end
 
 function BagnonDB:Initialize()
 	self:LoadSettings()
+
+	LoadAddOn('Blizzard_GuildBankUI')
 
 	self:SetScript('OnEvent', function(self, event, ...)
 		if self[event] then
@@ -151,7 +165,6 @@ function BagnonDB:PLAYER_LOGIN()
 	self:SaveEquipment()
 	self:SaveNumBankSlots()
 
-
 	self:RegisterEvent('GUILDBANKFRAME_OPENED')
 	self:RegisterEvent('GUILDBANKBAGSLOTS_CHANGED')
 	self:RegisterEvent('BANKFRAME_OPENED')
@@ -199,6 +212,8 @@ end
 
 
 function BagnonDB:GUILDBANKFRAME_OPENED()
+	HideBlizzardGuildBankFrame()
+
 	if IsPersonalBank() then
 		for i = 1, 6 do
 			local avail = GetGuildBankTabInfo(i)
@@ -391,11 +406,11 @@ function BagnonDB:GetItemCount(itemLink, bag, player)
 	local total = 0
 	local itemLink = select(2, GetItemInfo(ToShortLink(itemLink)))
 	local size = (self:GetBagData(bag, player)) or 0
-	
+
 	if (bag == "e") then
 		size = NUM_EQUIPMENT_SLOTS
 	end
-	
+
 	for slot = 1, size do
 		local link, count = self:GetItemData(bag, slot, player)
 		if link == itemLink then
@@ -432,7 +447,7 @@ function BagnonDB:SaveEquipment()
 			local link = ToShortLink(link)
 			local count =  GetInventoryItemCount('player', slot)
 			count = count > 1 and count or nil
-			
+
 			if(link and count) then
 				self.pdb[index] = format('%s,%d', link, count)
 			else
@@ -513,7 +528,7 @@ function BagnonDB:SaveBag(bag)
 		local size =  GetBagSize(bag)
 		local index = ToBagIndex(bag)
 		self.pdb[index] = size
-	else 
+	else
 		local size = GetBagSize(bag)
 		local index = ToBagIndex(bag)
 
@@ -535,11 +550,11 @@ function BagnonDB:SaveBag(bag)
 		else
 			self.pdb[index] = nil
 		end
-		
-		
+
+
 	end
-	
-	
+
+
 
 end
 

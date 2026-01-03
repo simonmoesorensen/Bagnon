@@ -23,6 +23,9 @@ local function GetIDFromLink(link)
 end
 
 local function GetAscensionBankType()
+	-- The logic doesn't work because GuildBankFrame is not loaded
+	-- However the sort still works because it can sort using 'guild' as a fallback
+	-- but personal and realm branches are never reached
 	if GuildBankFrame and GuildBankFrame.IsPersonalBank then
 		return "personal"
 	elseif GuildBankFrame and GuildBankFrame.IsRealmBank then
