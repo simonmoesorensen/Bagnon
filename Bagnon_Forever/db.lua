@@ -13,10 +13,8 @@ BagnonDB:SetScript('OnEvent', function(self, event, arg1)
 end)
 BagnonDB:RegisterEvent('ADDON_LOADED')
 
-
 ASC_PERSONAL_BANK_OFFSET = 1000;
 ASC_REALM_BANK_OFFSET = 2000;
-
 
 --constants
 local L = BAGNON_FOREVER_LOCALS
@@ -30,13 +28,6 @@ local playerList --a sorted list of players
 
 
 --[[ Local Functions ]]--
-local function IsPersonalBank()
-	return GuildBankFrame and GuildBankFrame.IsPersonalBank
-end
-
-local function IsRealmBank()
-	return GuildBankFrame and GuildBankFrame.IsRealmBank
-end
 
 local function ToIndex(bag, slot)
 	if tonumber(bag) then
@@ -47,17 +38,6 @@ end
 
 local function ToBagIndex(bag)
 	return (tonumber(bag) and bag*100) or bag
-end
-
-local function HideBlizzardGuildBankFrame()
-	-- Move frame off-screen
-	-- Reasoning: If we call :Hide() the Bagnon UI also hides
-	-- TODO: We have to find a cleaner way to hide the Blizzard guild bank UI
-
-	if GuildBankFrame then
-		GuildBankFrame:SetClampedToScreen(false)
-		GuildBankFrame:SetPoint("TOPLEFT", UIParent, "TOPLEFT", -1e5, 1e5)
-	end
 end
 
 --returns the full item link only for items that have enchants/suffixes, otherwise returns the item's ID
@@ -95,8 +75,6 @@ end
 
 function BagnonDB:Initialize()
 	self:LoadSettings()
-
-	LoadAddOn('Blizzard_GuildBankUI')
 
 	self:SetScript('OnEvent', function(self, event, ...)
 		if self[event] then
@@ -165,6 +143,7 @@ function BagnonDB:PLAYER_LOGIN()
 	self:SaveEquipment()
 	self:SaveNumBankSlots()
 
+
 	self:RegisterEvent('GUILDBANKFRAME_OPENED')
 	self:RegisterEvent('GUILDBANKBAGSLOTS_CHANGED')
 	self:RegisterEvent('BANKFRAME_OPENED')
@@ -212,9 +191,18 @@ end
 
 
 function BagnonDB:GUILDBANKFRAME_OPENED()
-	HideBlizzardGuildBankFrame()
+	if HasJsonCacheData("BANK_PERMISSIONS_PAYLOAD", 0) then
+		local json = GetJsonCacheData("BANK_PERMISSIONS_PAYLOAD", 0)
+		if json then
+			local jsonObject = C_Serialize:FromJSON(json)
+			if jsonObject then
+				self.IsPersonalBank = jsonObject.IsPersonalBank
+				self.IsRealmBank = jsonObject.IsRealmBank
+			end
+		end
+	end
 
-	if IsPersonalBank() then
+	if self.IsPersonalBank then
 		for i = 1, 6 do
 			local avail = GetGuildBankTabInfo(i)
 			if type(avail) == "string" then
@@ -224,7 +212,7 @@ function BagnonDB:GUILDBANKFRAME_OPENED()
 		return
 	end
 
-	if IsRealmBank() then
+	if self.IsRealmBank then
 		for i = 1, 6 do
 			local avail = GetGuildBankTabInfo(i)
 			if type(avail) == "string" then
