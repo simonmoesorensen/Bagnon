@@ -15,6 +15,7 @@ BagnonDB:RegisterEvent('ADDON_LOADED')
 
 ASC_PERSONAL_BANK_OFFSET = 1000;
 ASC_REALM_BANK_OFFSET = 2000;
+GUILDBANKBAGSLOTS_CHANGED_INIT_OFFSET = 2;  -- Offset used to identify when guild bank tabs are loaded
 
 --constants
 local L = BAGNON_FOREVER_LOCALS
@@ -146,6 +147,7 @@ function BagnonDB:PLAYER_LOGIN()
 
 	self:RegisterEvent('GUILDBANKFRAME_OPENED')
 	self:RegisterEvent('GUILDBANKBAGSLOTS_CHANGED')
+	self:RegisterEvent('GUILDBANKFRAME_CLOSED')
 	self:RegisterEvent('BANKFRAME_OPENED')
 	self:RegisterEvent('BANKFRAME_CLOSED')
 	self:RegisterEvent('PLAYER_MONEY')
@@ -191,6 +193,7 @@ end
 
 
 function BagnonDB:GUILDBANKFRAME_OPENED()
+	-- Identify bank type from permissions payload
 	if HasJsonCacheData("BANK_PERMISSIONS_PAYLOAD", 0) then
 		local json = GetJsonCacheData("BANK_PERMISSIONS_PAYLOAD", 0)
 		if json then
@@ -202,47 +205,67 @@ function BagnonDB:GUILDBANKFRAME_OPENED()
 		end
 	end
 
-	if self.IsPersonalBank then
-		for i = 1, 6 do
-			local avail = GetGuildBankTabInfo(i)
-			if type(avail) == "string" then
-				self:UpdateBag(i + ASC_PERSONAL_BANK_OFFSET)
-			end
+	self.guildBankUpdateCalls = 0
+	self.availableTabs = {} -- table of available tabs
+
+	-- Query all tabs for personal and realm bank to preload data
+	for i = 1, 6 do
+		local avail = GetGuildBankTabInfo(i)
+		if type(avail) == "string" and i ~= currentTab then
+			QueryGuildBankTab(i)
+			self.availableTabs[i] = avail
 		end
-		return
 	end
 
-	if self.IsRealmBank then
-		for i = 1, 6 do
-			local avail = GetGuildBankTabInfo(i)
-			if type(avail) == "string" then
-				self:UpdateBag(i + ASC_REALM_BANK_OFFSET)
-			end
-		end
-	end
+
 end
+
 
 function BagnonDB:GUILDBANKBAGSLOTS_CHANGED()
-	if self.IsPersonalBank then
-		for i = 1, 6 do
-			local avail = GetGuildBankTabInfo(i)
-			if type(avail) == "string" then
+	self.guildBankUpdateCalls = self.guildBankUpdateCalls + 1
+	local currentTab = GetCurrentGuildBankTab()
+
+	-- Special operation: After 2 initial calls, the QueryGuildBankTab calls above
+	-- trigger the GUILDBANKBAGSLOTS_CHANGED event  at which the queried items are available.
+
+	-- Only update the bank if we are within 1-6 range of the initial calls as those
+	-- are likely triggered by the QueryGuildBankTab calls above. Which makes items
+	-- in the tabs available for GetGuildBankItemInfo calls.
+	if ((self.guildBankUpdateCalls > GUILDBANKBAGSLOTS_CHANGED_INIT_OFFSET)
+		and (self.guildBankUpdateCalls <= GUILDBANKBAGSLOTS_CHANGED_INIT_OFFSET + #self.availableTabs)) then
+		for i, avail in pairs(self.availableTabs) do
+			-- Ignore current tab, and only update the tab that is next in the sequence
+			if (i ~= currentTab and self.guildBankUpdateCalls == GUILDBANKBAGSLOTS_CHANGED_INIT_OFFSET + i) then
 				self:UpdateBag(i + ASC_PERSONAL_BANK_OFFSET)
 			end
 		end
 		return
 	end
 
-	if self.IsRealmBank then
-		for i = 1, 6 do
-			local avail = GetGuildBankTabInfo(i)
-			if type(avail) == "string" then
-				self:UpdateBag(i + ASC_REALM_BANK_OFFSET)
-			end
+	-- Normal operation: Update current tab
+	if self.IsPersonalBank then
+		local avail = GetGuildBankTabInfo(currentTab)
+		if type(avail) == "string" then
+			self:UpdateBag(currentTab + ASC_PERSONAL_BANK_OFFSET)
 		end
+		return
+	end
+
+	-- Update all tabs for realm bank on any change
+	if self.IsRealmBank then
+		local avail = GetGuildBankTabInfo(currentTab)
+		if type(avail) == "string" then
+			self:UpdateBag(currentTab + ASC_REALM_BANK_OFFSET)
+		end
+		return
 	end
 end
 
+function BagnonDB:GUILDBANKFRAME_CLOSED()
+	self.IsPersonalBank = nil
+	self.IsRealmBank = nil
+	self.guildBankUpdateCalls = 0
+end
 
 function BagnonDB:UNIT_INVENTORY_CHANGED(event, unit)
 	if unit == 'player' then
