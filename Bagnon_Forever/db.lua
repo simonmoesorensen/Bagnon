@@ -223,7 +223,7 @@ function BagnonDB:GUILDBANKFRAME_OPENED()
 end
 
 function BagnonDB:GUILDBANKBAGSLOTS_CHANGED()
-	if IsPersonalBank() then
+	if self.IsPersonalBank then
 		for i = 1, 6 do
 			local avail = GetGuildBankTabInfo(i)
 			if type(avail) == "string" then
@@ -233,7 +233,7 @@ function BagnonDB:GUILDBANKBAGSLOTS_CHANGED()
 		return
 	end
 
-	if IsRealmBank() then
+	if self.IsRealmBank then
 		for i = 1, 6 do
 			local avail = GetGuildBankTabInfo(i)
 			if type(avail) == "string" then
