@@ -236,7 +236,13 @@ function BagnonDB:GUILDBANKBAGSLOTS_CHANGED()
 		for i, avail in pairs(self.availableTabs) do
 			-- Ignore current tab, and only update the tab that is next in the sequence
 			if (i ~= currentTab and self.guildBankUpdateCalls == GUILDBANKBAGSLOTS_CHANGED_INIT_OFFSET + i) then
-				self:UpdateBag(i + ASC_PERSONAL_BANK_OFFSET)
+				if self.IsPersonalBank then
+					self:UpdateBag(i + ASC_PERSONAL_BANK_OFFSET)
+				elseif self.IsRealmBank then
+					self:UpdateBag(i + ASC_REALM_BANK_OFFSET)
+				else
+					print("[BagnonForever] Error: Unknown bank type")
+				end
 			end
 		end
 		return
