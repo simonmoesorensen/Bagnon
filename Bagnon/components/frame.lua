@@ -68,6 +68,7 @@ function Frame:UpdateEvents()
 		self:RegisterMessage('DATABROKER_FRAME_ENABLE_UPDATE')
 		self:RegisterMessage('SEARCH_TOGGLE_ENABLE_UPDATE')
 		self:RegisterMessage('SORT_BTN_ENABLE_UPDATE')
+		self:RegisterMessage('MERGE_BTN_ENABLE_UPDATE')
 		self:RegisterMessage('OPTIONS_TOGGLE_ENABLE_UPDATE')
 	end
 end
@@ -176,6 +177,12 @@ function Frame:SEARCH_TOGGLE_ENABLE_UPDATE(msg, frameID, enable)
 end
 
 function Frame:SORT_BTN_ENABLE_UPDATE(msg, frameID, enable)
+	if self:GetFrameID() == frameID then
+		self:Layout()
+	end
+end
+
+function Frame:MERGE_BTN_ENABLE_UPDATE(msg, frameID, enable)
 	if self:GetFrameID() == frameID then
 		self:Layout()
 	end
@@ -440,6 +447,10 @@ function Frame:Layout()
 	width = width + w + 24 --append spacing between close button and this
 	height = height + 20
 
+	local w, h = self:PlaceMergeBtn()
+	width = width + w + 24
+	height = height + 20
+
 	local w, h = self:PlaceTitleFrame()
 	width = width + w
 
@@ -575,7 +586,9 @@ function Frame:PlaceSearchFrame()
 		frame:SetPoint('TOPLEFT', self, 'TOPLEFT', 8, -8)
 	end
 
-	if self:HasSortBtn() then
+	if self:HasMergeBtn() then
+		frame:SetPoint('RIGHT', self:GetMergeBtn(), 'LEFT', -2, 0)
+	elseif self:HasSortBtn() then
 		frame:SetPoint('RIGHT', self:GetSortBtn(), 'LEFT', -2, 0)
 	elseif self:HasOptionsToggle() then
 		frame:SetPoint('RIGHT', self:GetOptionsToggle(), 'LEFT', -2, 0)
@@ -699,7 +712,9 @@ function Frame:PlaceTitleFrame()
 		h = 20
 	end
 
-	if self:HasSortBtn() then
+	if self:HasMergeBtn() then
+		frame:SetPoint('RIGHT', self:GetMergeBtn(), 'LEFT', -2, 0)
+	elseif self:HasSortBtn() then
 		frame:SetPoint('RIGHT', self:GetSortBtn(), 'LEFT', -2, 0)
 	elseif self:HasOptionsToggle() then
 		frame:SetPoint('RIGHT', self:GetOptionsToggle(), 'LEFT', -2, 0)
@@ -866,6 +881,46 @@ end
 function Frame:HasSortBtn()
 	local name, title, notes, enabled = GetAddOnInfo('Bagnon_Config')
 	return enabled and self:GetSettings():HasSortBtn()
+end
+
+--[[ merge stacks ]] --
+
+function Frame:GetMergeBtn()
+	return self.mergeBtn
+end
+
+function Frame:CreateMergeBtn()
+	local f = Bagnon.MergeBtn:New(self:GetFrameID(), self)
+	self.mergeBtn = f
+	return f
+end
+
+function Frame:PlaceMergeBtn()
+	if self:HasMergeBtn() then
+		local btn = self:GetMergeBtn() or self:CreateMergeBtn()
+		btn:ClearAllPoints()
+		if self:HasSortBtn() then
+			btn:SetPoint('RIGHT', self:GetSortBtn(), 'LEFT', -4, 0)
+		elseif self:HasOptionsToggle() then
+			btn:SetPoint('RIGHT', self:GetOptionsToggle(), 'LEFT', -4, 0)
+		else
+			btn:SetPoint('TOPRIGHT', self, 'TOPRIGHT', -32, -8)
+		end
+		btn:Show()
+
+		return btn:GetWidth(), btn:GetHeight()
+	end
+
+	local btn = self:GetMergeBtn()
+	if btn then
+		btn:Hide()
+	end
+	return 0, 0
+end
+
+function Frame:HasMergeBtn()
+	local name, title, notes, enabled = GetAddOnInfo('Bagnon_Config')
+	return enabled and self:GetSettings():HasMergeBtn()
 end
 
 --[[ options toggle ]] --

@@ -289,6 +289,14 @@ function SavedFrameSettings:HasSortBtn()
 	return self:GetDB().hasSortBtn
 end
 
+function SavedFrameSettings:SetHasMergeBtn(enable)
+	self:GetDB().hasMergeBtn = enable or false
+end
+
+function SavedFrameSettings:HasMergeBtn()
+	return self:GetDB().hasMergeBtn
+end
+
 function SavedFrameSettings:SetHasOptionsToggle(enable)
 	self:GetDB().hasOptionsToggle = enable or false
 end
@@ -427,6 +435,7 @@ function SavedFrameSettings:GetDefaultInventorySettings()
 		hasDBOFrame = true,
 		hasSearchToggle = true,
 		hasSortBtn = true,
+		hasMergeBtn = true,
 		hasOptionsToggle = true,
 		hasKeyringToggle = true,
 
@@ -478,6 +487,7 @@ function SavedFrameSettings:GetDefaultBankSettings()
 		hasDBOFrame = true,
 		hasSearchToggle = true,
 		hasSortBtn = false,
+		hasMergeBtn = false,
 		hasOptionsToggle = true,
 		hasKeyringToggle = false,
 
@@ -521,6 +531,7 @@ function SavedFrameSettings:GetDefaultKeyRingSettings()
 		hasDBOFrame = false,
 		hasSearchToggle = false,
 		hasSortBtn = false,
+		hasMergeBtn = false,
 		hasOptionsToggle = true,
 		hasKeyringToggle = false,
 

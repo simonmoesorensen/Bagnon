@@ -1,4 +1,4 @@
-﻿--[[
+--[[
 	frameSettings.lua
 		A bagnon frame settings object
 --]]
@@ -256,6 +256,20 @@ end
 
 function FrameSettings:HasSortBtn()
 	return self:GetDB():HasSortBtn()
+end
+
+--merge btn
+function FrameSettings:SetHasMergeBtn(enable)
+	local enable = enable and true or false
+
+	if self:HasMergeBtn() ~= enable then
+		self:GetDB():SetHasMergeBtn(enable)
+		self:SendMessage('MERGE_BTN_ENABLE_UPDATE', self:HasMergeBtn())
+	end
+end
+
+function FrameSettings:HasMergeBtn()
+	return self:GetDB():HasMergeBtn()
 end
 
 --options toggle

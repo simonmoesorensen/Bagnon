@@ -53,6 +53,7 @@ function FrameOptions:UpdateMessages()
 	self:RegisterMessage('SEARCH_TOGGLE_ENABLE_UPDATE')
 	self:RegisterMessage('SLOT_ORDER_UPDATE')
 	self:RegisterMessage('SORT_BTN_ENABLE_UPDATE')
+	self:RegisterMessage('MERGE_BTN_ENABLE_UPDATE')
 	self:RegisterMessage('OPTIONS_TOGGLE_ENABLE_UPDATE')
 end
 
@@ -140,6 +141,12 @@ function FrameOptions:SORT_BTN_ENABLE_UPDATE(msg, frameID, enable)
 	end
 end
 
+function FrameOptions:MERGE_BTN_ENABLE_UPDATE(msg, frameID, enable)
+	if self:GetFrameID() == frameID then
+		self:GetMergeBtnCheckBox():UpdateChecked()
+	end
+end
+
 function FrameOptions:OPTIONS_TOGGLE_ENABLE_UPDATE(msg, frameID, enable)
 	if self:GetFrameID() == frameID then
 		self:GetToggleOptionsCheckbox():UpdateChecked()
@@ -188,8 +195,11 @@ function FrameOptions:AddWidgets()
 	local sortBtnFrame = self:CreateBtnSortCheckbox()
 	sortBtnFrame:SetPoint('TOPLEFT', toggleSearchFrame, 'BOTTOMLEFT', 0, -CHECK_BUTTON_SPACING)
 
+	local mergeBtnFrame = self:CreateBtnMergeCheckbox()
+	mergeBtnFrame:SetPoint('TOPLEFT', sortBtnFrame, 'BOTTOMLEFT', 0, -CHECK_BUTTON_SPACING)
+
 	local toggleOptionsFrame = self:CreateToggleOptionsCheckbox()
-	toggleOptionsFrame:SetPoint('TOPLEFT', sortBtnFrame, 'BOTTOMLEFT', 0, -CHECK_BUTTON_SPACING)
+	toggleOptionsFrame:SetPoint('TOPLEFT', mergeBtnFrame, 'BOTTOMLEFT', 0, -CHECK_BUTTON_SPACING)
 
 	local reverseSlotOrdering = self:CreateReverseSlotOrderCheckbox()
 	reverseSlotOrdering:SetPoint('TOPLEFT', toggleOptionsFrame, 'BOTTOMLEFT', 0, -CHECK_BUTTON_SPACING)
@@ -257,6 +267,7 @@ function FrameOptions:UpdateWidgets()
 	self:GetToggleDBOFrameCheckbox():UpdateChecked()
 	self:GetToggleSearchFrameCheckbox():UpdateChecked()
 	self:GetSortBtnCheckBox():UpdateChecked()
+	self:GetMergeBtnCheckBox():UpdateChecked()
 	self:GetToggleOptionsCheckbox():UpdateChecked()
 
 	self:GetReverseSlotOrderCheckbox():UpdateChecked()
@@ -563,6 +574,26 @@ end
 
 function FrameOptions:GetSortBtnCheckBox()
 	return self.btnSortCheckbox
+end
+
+--mergeBtn toggle
+function FrameOptions:CreateBtnMergeCheckbox()
+	local button = Bagnon.OptionsCheckButton:New(L.EnableMergeBtn, self)
+
+	button.OnEnableSetting = function(self, enable)
+		self:GetParent():GetSettings():SetHasMergeBtn(enable)
+	end
+
+	button.IsSettingEnabled = function(self, enable)
+		return self:GetParent():GetSettings():HasMergeBtn()
+	end
+
+	self.btnMergeCheckbox = button
+	return button
+end
+
+function FrameOptions:GetMergeBtnCheckBox()
+	return self.btnMergeCheckbox
 end
 
 --options frame toggle
